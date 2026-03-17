@@ -7,7 +7,7 @@ from aiohttp import ClientSession
 from aioresponses import aioresponses
 from datetime import datetime, timezone
 
-from sentinel.config import SentinelConfig, TargetConfig, SignalConfig, EmailConfig
+from sentinel.config import SentinelConfig, TargetConfig, SignalConfig, NtfyConfig
 from sentinel.health import HealthRingBuffer, HealthRecord, ServiceStatus
 from sentinel.poller import poll_all_targets
 from sentinel.alerting import AlertRouter
@@ -28,11 +28,11 @@ async def test_full_monitoring_cycle() -> None:
             phone_number="+111",
             recipient="+222",
         ),
-        email=EmailConfig(enabled=False),
+        ntfy=NtfyConfig(enabled=False),
     )
 
     buffer = HealthRingBuffer(max_size=100)
-    router = AlertRouter(config.signal, config.email)
+    router = AlertRouter(config.signal, config.ntfy)
 
     # Cycle 1: Both healthy
     with aioresponses() as mocked:

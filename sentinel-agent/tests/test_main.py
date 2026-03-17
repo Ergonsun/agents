@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from sentinel.__main__ import _run
-from sentinel.config import SentinelConfig, TargetConfig, SignalConfig, EmailConfig
+from sentinel.config import SentinelConfig, TargetConfig, SignalConfig, NtfyConfig
 
 
 @pytest.mark.asyncio
