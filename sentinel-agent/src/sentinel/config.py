@@ -51,14 +51,11 @@ class SignalConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class EmailConfig:
+class NtfyConfig:
     enabled: bool = False
-    smtp_host: str = ""
-    smtp_port: int = 587
-    username: str = ""
-    password: str = ""
-    from_addr: str = ""
-    to_addr: str = ""
+    server_url: str = "https://ntfy.sh"
+    topic: str = ""
+    priority: str = "high"
 
     @classmethod
     def from_dict(cls, data: dict | None) -> Self:
@@ -66,23 +63,95 @@ class EmailConfig:
             return cls()
         return cls(
             enabled=True,
-            smtp_host=data.get("smtp_host", ""),
-            smtp_port=data.get("smtp_port", 587),
-            username=data.get("username", ""),
-            password=data.get("password", ""),
-            from_addr=data.get("from_addr", ""),
-            to_addr=data.get("to_addr", ""),
+            server_url=data.get("server_url", "https://ntfy.sh"),
+            topic=data.get("topic", ""),
+            priority=data.get("priority", "high"),
         )
 
     def to_dict(self) -> dict:
         return {
             "enabled": self.enabled,
-            "smtp_host": self.smtp_host,
-            "smtp_port": self.smtp_port,
-            "username": self.username,
-            "password": self.password,
-            "from_addr": self.from_addr,
-            "to_addr": self.to_addr,
+            "server_url": self.server_url,
+            "topic": self.topic,
+            "priority": self.priority,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class SlackConfig:
+    """Slack webhook alerting — posts to a channel via incoming webhook."""
+    enabled: bool = False
+    webhook_url: str = ""
+    channel: str = "#sentinel-alerts"
+
+    @classmethod
+    def from_dict(cls, data: dict | None) -> Self:
+        if not data or not data.get("enabled", False):
+            return cls()
+        return cls(
+            enabled=True,
+            webhook_url=data.get("webhook_url", ""),
+            channel=data.get("channel", "#sentinel-alerts"),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "enabled": self.enabled,
+            "webhook_url": self.webhook_url,
+            "channel": self.channel,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class GitHubConfig:
+    """GitHub Actions workflow monitoring."""
+    enabled: bool = False
+    repo: str = ""  # e.g. "Ergonsun/adga"
+    workflow: str = "deploy.yml"  # workflow file name
+    token: str = ""  # GitHub personal access token
+
+    @classmethod
+    def from_dict(cls, data: dict | None) -> Self:
+        if not data or not data.get("enabled", False):
+            return cls()
+        return cls(
+            enabled=True,
+            repo=data.get("repo", ""),
+            workflow=data.get("workflow", "deploy.yml"),
+            token=data.get("token", ""),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "enabled": self.enabled,
+            "repo": self.repo,
+            "workflow": self.workflow,
+            "token": self.token,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class HetznerMonitorConfig:
+    """Hetzner Cloud server status monitoring."""
+    enabled: bool = False
+    token: str = ""
+    server_names: list[str] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict | None) -> Self:
+        if not data or not data.get("enabled", False):
+            return cls()
+        return cls(
+            enabled=True,
+            token=data.get("token", ""),
+            server_names=data.get("server_names", []),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "enabled": self.enabled,
+            "token": self.token,
+            "server_names": self.server_names,
         }
 
 
@@ -91,16 +160,22 @@ class SentinelConfig:
     targets: list[TargetConfig]
     poll_interval_seconds: int = DEFAULT_POLL_INTERVAL
     signal: SignalConfig = field(default_factory=SignalConfig)
-    email: EmailConfig = field(default_factory=EmailConfig)
+    ntfy: NtfyConfig = field(default_factory=NtfyConfig)
+    slack: SlackConfig = field(default_factory=SlackConfig)
+    github: GitHubConfig = field(default_factory=GitHubConfig)
+    hetzner: HetznerMonitorConfig = field(default_factory=HetznerMonitorConfig)
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
-        targets = [TargetConfig.from_dict(t) for t in data["targets"]]
+        targets = [TargetConfig.from_dict(t) for t in data.get("targets", [])]
         return cls(
             targets=targets,
             poll_interval_seconds=data.get("poll_interval_seconds", DEFAULT_POLL_INTERVAL),
             signal=SignalConfig.from_dict(data.get("signal")),
-            email=EmailConfig.from_dict(data.get("email")),
+            ntfy=NtfyConfig.from_dict(data.get("ntfy")),
+            slack=SlackConfig.from_dict(data.get("slack")),
+            github=GitHubConfig.from_dict(data.get("github")),
+            hetzner=HetznerMonitorConfig.from_dict(data.get("hetzner")),
         )
 
     def to_dict(self) -> dict:
@@ -108,7 +183,10 @@ class SentinelConfig:
             "targets": [t.to_dict() for t in self.targets],
             "poll_interval_seconds": self.poll_interval_seconds,
             "signal": self.signal.to_dict(),
-            "email": self.email.to_dict(),
+            "ntfy": self.ntfy.to_dict(),
+            "slack": self.slack.to_dict(),
+            "github": self.github.to_dict(),
+            "hetzner": self.hetzner.to_dict(),
         }
 
 

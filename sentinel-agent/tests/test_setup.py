@@ -23,13 +23,20 @@ async def test_first_time_setup_full() -> None:
         "http://localhost:8080",         # signal api url
         "+1234567890",                   # signal phone
         "+0987654321",                   # signal recipient
-        "y",                             # setup email?
-        "smtp.example.com",             # smtp host
-        "587",                           # smtp port
-        "user@example.com",             # username
-        "password123",                   # password
-        "sentinel@example.com",         # from
-        "roger@example.com",            # to
+        "y",                             # setup ntfy?
+        "https://ntfy.sh",              # server url
+        "test-topic",                    # topic
+        "high",                          # priority
+        "y",                             # setup slack?
+        "https://hooks.slack.com/x",     # webhook url
+        "#alerts",                       # channel
+        "y",                             # setup github?
+        "Ergonsun/adga",                 # repo
+        "deploy.yml",                    # workflow
+        "",                              # token (blank)
+        "y",                             # setup hetzner?
+        "hcloud_token",                  # token
+        "adga-prod, blacksmith-prod",    # server names
     ])
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -40,7 +47,12 @@ async def test_first_time_setup_full() -> None:
         assert len(config.targets) == 2
         assert config.targets[0].name == "ADGA"
         assert config.signal.enabled is True
-        assert config.email.enabled is True
+        assert config.ntfy.enabled is True
+        assert config.slack.enabled is True
+        assert config.github.enabled is True
+        assert config.github.repo == "Ergonsun/adga"
+        assert config.hetzner.enabled is True
+        assert config.hetzner.server_names == ["adga-prod", "blacksmith-prod"]
 
         # Verify it was saved
         reloaded = load_config(config_path)
@@ -50,13 +62,16 @@ async def test_first_time_setup_full() -> None:
 
 @pytest.mark.asyncio
 async def test_first_time_setup_minimal() -> None:
-    """Test setup with signal and email skipped."""
+    """Test setup with all optional monitors skipped."""
     inputs = iter([
         "MyApp",                         # target name
         "http://localhost:5000/health",  # target url
         "n",                             # add another?
         "n",                             # setup signal?
-        "n",                             # setup email?
+        "n",                             # setup ntfy?
+        "n",                             # setup slack?
+        "n",                             # setup github?
+        "n",                             # setup hetzner?
     ])
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -66,4 +81,7 @@ async def test_first_time_setup_minimal() -> None:
 
         assert len(config.targets) == 1
         assert config.signal.enabled is False
-        assert config.email.enabled is False
+        assert config.ntfy.enabled is False
+        assert config.slack.enabled is False
+        assert config.github.enabled is False
+        assert config.hetzner.enabled is False

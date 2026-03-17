@@ -4,9 +4,12 @@ from pathlib import Path
 
 from sentinel.config import (
     DEFAULT_CONFIG_PATH,
-    EmailConfig,
+    GitHubConfig,
+    HetznerMonitorConfig,
+    NtfyConfig,
     SentinelConfig,
     SignalConfig,
+    SlackConfig,
     TargetConfig,
     save_config,
 )
@@ -54,24 +57,58 @@ async def run_first_time_setup(
             recipient=_ask("Alert recipient phone number"),
         )
 
-    # Email setup
-    print("\n─── Email Alerts ───")
-    email = EmailConfig()
-    if _ask_yn("Set up email notifications?"):
-        email = EmailConfig(
+    # ntfy setup
+    print("\n─── Push Notifications (ntfy) ───")
+    ntfy = NtfyConfig()
+    if _ask_yn("Set up ntfy push notifications?"):
+        ntfy = NtfyConfig(
             enabled=True,
-            smtp_host=_ask("SMTP host"),
-            smtp_port=int(_ask("SMTP port", "587")),
-            username=_ask("SMTP username"),
-            password=_ask("SMTP password"),
-            from_addr=_ask("From address"),
-            to_addr=_ask("To address"),
+            server_url=_ask("ntfy server URL", "https://ntfy.sh"),
+            topic=_ask("ntfy topic (private, unique string)"),
+            priority=_ask("Alert priority", "high"),
+        )
+
+    # Slack setup
+    print("\n─── Slack Notifications ───")
+    slack = SlackConfig()
+    if _ask_yn("Set up Slack webhook notifications?"):
+        slack = SlackConfig(
+            enabled=True,
+            webhook_url=_ask("Slack incoming webhook URL"),
+            channel=_ask("Slack channel", "#sentinel-alerts"),
+        )
+
+    # GitHub Actions monitoring
+    print("\n─── GitHub Actions Monitoring ───")
+    github = GitHubConfig()
+    if _ask_yn("Monitor GitHub Actions deploy workflows?"):
+        github = GitHubConfig(
+            enabled=True,
+            repo=_ask("GitHub repo (e.g., Ergonsun/adga)"),
+            workflow=_ask("Workflow filename", "deploy.yml"),
+            token=_ask("GitHub token (for private repos, or leave blank)"),
+        )
+
+    # Hetzner monitoring
+    print("\n─── Hetzner Cloud Monitoring ───")
+    hetzner = HetznerMonitorConfig()
+    if _ask_yn("Monitor Hetzner Cloud servers?"):
+        token = _ask("Hetzner API token")
+        server_names_raw = _ask("Server names to monitor (comma-separated, or blank for all)")
+        server_names = [s.strip() for s in server_names_raw.split(",") if s.strip()] if server_names_raw else []
+        hetzner = HetznerMonitorConfig(
+            enabled=True,
+            token=token,
+            server_names=server_names,
         )
 
     config = SentinelConfig(
         targets=targets,
         signal=signal,
-        email=email,
+        ntfy=ntfy,
+        slack=slack,
+        github=github,
+        hetzner=hetzner,
     )
     save_config(config, config_path)
     print(f"\n[Sentinel] Configuration saved to {config_path}")

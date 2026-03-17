@@ -15,7 +15,12 @@ def test_load_config_from_file(sample_config: dict) -> None:
     assert config.targets[0].name == "ADGA"
     assert config.targets[0].url == "http://localhost:8000/health"
     assert config.signal.enabled is True
-    assert config.email.enabled is True
+    assert config.ntfy.enabled is True
+    assert config.slack.enabled is True
+    assert config.github.enabled is True
+    assert config.github.repo == "Ergonsun/adga"
+    assert config.hetzner.enabled is True
+    assert config.hetzner.server_names == ["adga-prod", "blacksmith-prod"]
     assert config.poll_interval_seconds == 300
     path.unlink()
 
@@ -36,6 +41,9 @@ def test_save_and_reload(sample_config: dict) -> None:
         assert reloaded is not None
         assert reloaded.targets[0].name == config.targets[0].name
         assert reloaded.signal.phone_number == config.signal.phone_number
+        assert reloaded.slack.webhook_url == config.slack.webhook_url
+        assert reloaded.github.repo == config.github.repo
+        assert reloaded.hetzner.token == config.hetzner.token
 
 
 def test_config_defaults_disabled_channels() -> None:
@@ -44,5 +52,8 @@ def test_config_defaults_disabled_channels() -> None:
     }
     config = SentinelConfig.from_dict(minimal)
     assert config.signal.enabled is False
-    assert config.email.enabled is False
+    assert config.ntfy.enabled is False
+    assert config.slack.enabled is False
+    assert config.github.enabled is False
+    assert config.hetzner.enabled is False
     assert config.poll_interval_seconds == 300
